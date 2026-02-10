@@ -17,8 +17,44 @@ function nextId(prefix: string) {
   return `${prefix}-${idCounter}`;
 }
 
+// JSON format from plan-input component
+type PlanJson = {
+  phases: Array<{
+    name: string;
+    hours: string; // "X-Y"
+    tasks: string[];
+  }>;
+};
+
 export function parsePlan(text: string): Phase[] {
   idCounter = 0;
+  const trimmed = text.trim();
+
+  // Try to parse as JSON first
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      const json = JSON.parse(trimmed) as PlanJson;
+      if (json && Array.isArray(json.phases)) {
+        const phases: Phase[] = json.phases.map((phase) => ({
+          id: nextId("phase"),
+          name: String(phase.name || "Phase").trim(),
+          hours: phase.hours ? String(phase.hours).trim() : null,
+          tasks: (phase.tasks || []).map((task) => ({
+            id: nextId("task"),
+            text: String(task).trim(),
+            done: false,
+          })),
+        }));
+        if (phases.length > 0) {
+          return phases;
+        }
+      }
+    } catch {
+      // Not valid JSON, fall through to markdown parsing
+    }
+  }
+
+  // Fall back to markdown parsing
   const phases: Phase[] = [];
   const lines = text.split("\n");
 

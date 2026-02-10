@@ -65,6 +65,12 @@ export default function Home() {
     setScreen("welcome");
   }, []);
 
+  const handleImport = useCallback((data: { title: string; phases: Phase[] }) => {
+    setPhases(data.phases);
+    setProjectTitle(data.title);
+    setScreen("dashboard");
+  }, []);
+
   switch (screen) {
     case "welcome":
       return (
@@ -86,16 +92,17 @@ export default function Home() {
           onBack={() => setScreen("welcome")}
         />
       );
-    case "dashboard":
-      return (
-        <ProjectDashboard
-          title={projectTitle}
-          phases={phases}
-          onToggleTask={handleToggleTask}
-          onAddTask={handleAddTask}
-          onReset={handleReset}
-          onHome={handleHome}
-        />
-      );
+      case "dashboard":
+        return (
+          <ProjectDashboard
+            title={projectTitle}
+            phases={phases}
+            onToggleTask={handleToggleTask}
+            onAddTask={handleAddTask}
+            onReset={handleReset}
+            onHome={handleHome}
+            onImport={handleImport}
+          />
+        );
   }
 }
