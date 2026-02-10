@@ -1,4 +1,4 @@
-# 🧩 Ship It — From AI Plans to Executable Tasks
+# Ship It — From AI Plans to Executable Tasks
 
 **Ship It** is a lightweight prototype that turns AI-generated development plans into structured, trackable tasks — without forcing you to manually recreate everything in a todo app.
 
@@ -8,7 +8,7 @@ This project is intentionally built as a **vibe-coding / prototyping demo**, opt
 
 ---
 
-## ✨ What This Prototype Does
+## What This Prototype Does
 
 - Converts AI-generated build plans (JSON) into structured project phases and tasks
 - Tracks task completion with instant feedback
@@ -20,7 +20,7 @@ This project is intentionally built as a **vibe-coding / prototyping demo**, opt
 
 ---
 
-## 🎯 Why This Exists
+## Why This Exists
 
 When planning with AI, the output usually ends as:
 - a chat message
@@ -35,7 +35,7 @@ The goal is not task management. The goal is **reducing the gap between intentio
 
 ---
 
-## 🧠 Core Concepts
+## Core Concepts
 
 ### 1. AI → JSON → UI
 
@@ -71,7 +71,7 @@ Persistence is handled via `localStorage`, which is sufficient for this stage.
 
 ---
 
-## 🗂️ Persistence Strategy
+## Persistence Strategy
 
 - Projects are stored in `localStorage`
 - Task completion is auto-saved on every change
@@ -88,19 +88,19 @@ If an older single-project key is detected:
 
 ---
 
-## 🧪 What This Prototype Intentionally Does Not Do
+## What This Prototype Intentionally Does Not Do
 
-- ❌ No real AI calls (output is pasted or mocked)
-- ❌ No user accounts
-- ❌ No backend or database
-- ❌ No collaboration
-- ❌ No analytics
+- No real AI calls (output is pasted or mocked)
+- No user accounts
+- No backend or database
+- No collaboration
+- No analytics
 
 These are conscious tradeoffs to keep the focus on core UX and flow.
 
 ---
 
-## 🧱 Tech Stack
+## Tech Stack
 
 - **Next.js** (App Router)
 - **React**
@@ -110,30 +110,34 @@ These are conscious tradeoffs to keep the focus on core UX and flow.
 
 ---
 
-## 🧭 Project Structure (Relevant Files)
+## Project Structure (Relevant Files)
 
 ```
-├── page.tsx                    # main app entry
-├── welcome-screen.tsx          # project overview & entry points
-├── projects-dashboard.tsx      # create, open, delete projects
-├── project-dashboard.tsx       # task tracking and progress
-└── localStorage helpers        # save/load/migrate project data
+app/
+  page.tsx                     # main app entry, routing, localStorage orchestration
+components/
+  welcome-screen.tsx           # project overview & entry points
+  plan-input.tsx               # JSON prompt and parsing UI
+  projects-dashboard.tsx       # create, open, delete projects
+  project-dashboard.tsx        # task tracking and progress
+lib/
+  parse-plan.ts                # JSON/markdown plan parsing
 ```
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open: 👉 **http://localhost:3000**
+Then open: `http://localhost:3000`
 
 ---
 
-## 🧠 Future Directions (Out of Scope for This Prototype)
+## Future Directions (Out of Scope for This Prototype)
 
 - Shareable project links
 - Backend persistence (KV / Redis / DB)
@@ -145,7 +149,7 @@ These were intentionally left out to preserve scope.
 
 ---
 
-## 🏁 Final Notes
+## Final Notes
 
 This project is **not a finished product**. It is a focused prototype designed to demonstrate:
 
@@ -159,10 +163,10 @@ This project is **not a finished product**. It is a focused prototype designed t
 
 ---
 
-## 📄 License
+## License
 
 MIT
 
 ---
 
-**Built with ⚡ by a developer who ships.**
+**Built by a developer who ships.**
