@@ -1,145 +1,264 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { WelcomeScreen } from "@/components/welcome-screen";
 import { PlanInput } from "@/components/plan-input";
 import { ProjectDashboard } from "@/components/project-dashboard";
+import { ProjectsDashboard } from "@/components/projects-dashboard";
 import { parsePlan, type Phase } from "@/lib/parse-plan";
 
-type Screen = "welcome" | "input" | "dashboard";
+type Screen = "welcome" | "input" | "projects" | "dashboard";
 
-const STORAGE_KEY = "ship-it-project-data";
+const PROJECTS_STORAGE_KEY = "ship-it-projects";
+const ACTIVE_PROJECT_KEY = "ship-it-active-project-id";
+const LEGACY_STORAGE_KEY = "ship-it-project-data";
 
-interface StoredProjectData {
+interface StoredProject {
+  id: string;
   title: string;
   phases: Phase[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-function saveToLocalStorage(title: string, phases: Phase[]) {
-  try {
-    const data: StoredProjectData = {
-      title,
-      phases: phases.map((phase) => ({
-        ...phase,
-        tasks: phase.tasks.map((task) => ({
-          ...task,
-        })),
-      })),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error("Failed to save to localStorage:", error);
+function clonePhases(phases: Phase[]) {
+  return phases.map((phase) => ({
+    ...phase,
+    tasks: phase.tasks.map((task) => ({ ...task })),
+  }));
+}
+
+function createProjectId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
   }
+  return `project-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function loadFromLocalStorage(): StoredProjectData | null {
+function createProject(title: string, phases: Phase[]): StoredProject {
+  const now = new Date().toISOString();
+  return {
+    id: createProjectId(),
+    title,
+    phases: clonePhases(phases),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function saveProjectsToLocalStorage(
+  projects: StoredProject[],
+  activeProjectId: string | null
+) {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored) as StoredProjectData;
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    if (activeProjectId) {
+      localStorage.setItem(ACTIVE_PROJECT_KEY, activeProjectId);
+    } else {
+      localStorage.removeItem(ACTIVE_PROJECT_KEY);
     }
   } catch (error) {
-    console.error("Failed to load from localStorage:", error);
+    console.error("Failed to save projects to localStorage:", error);
   }
-  return null;
 }
 
-function clearLocalStorage() {
+function loadProjectsFromLocalStorage(): {
+  projects: StoredProject[];
+  activeProjectId: string | null;
+} {
+  let projects: StoredProject[] = [];
+  let activeProjectId: string | null = null;
+
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    const storedProjects = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    if (storedProjects) {
+      const parsed = JSON.parse(storedProjects);
+      if (Array.isArray(parsed)) {
+        projects = parsed as StoredProject[];
+      }
+    }
+
+    const storedActive = localStorage.getItem(ACTIVE_PROJECT_KEY);
+    if (storedActive) {
+      activeProjectId = storedActive;
+    }
   } catch (error) {
-    console.error("Failed to clear localStorage:", error);
+    console.error("Failed to load projects from localStorage:", error);
   }
+
+  if (projects.length === 0) {
+    try {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        const legacyData = JSON.parse(legacy) as {
+          title: string;
+          phases: Phase[];
+        };
+        if (legacyData?.phases?.length) {
+          const migrated = createProject(
+            legacyData.title || "Untitled Project",
+            legacyData.phases
+          );
+          projects = [migrated];
+          activeProjectId = migrated.id;
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          saveProjectsToLocalStorage(projects, activeProjectId);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to migrate legacy project data:", error);
+    }
+  }
+
+  if (projects.length > 0 && activeProjectId) {
+    const exists = projects.some((project) => project.id === activeProjectId);
+    if (!exists) {
+      activeProjectId = projects[0].id;
+    }
+  }
+
+  return { projects, activeProjectId };
 }
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("welcome");
-  const [phases, setPhases] = useState<Phase[]>([]);
-  const [projectTitle, setProjectTitle] = useState("");
+  const [projects, setProjects] = useState<StoredProject[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
-  const hasProject = phases.length > 0;
+  const activeProject = useMemo(
+    () => projects.find((project) => project.id === activeProjectId) ?? null,
+    [projects, activeProjectId]
+  );
 
-  // Load from localStorage on mount
+  const hasProjects = projects.length > 0;
+
   useEffect(() => {
-    const stored = loadFromLocalStorage();
-    if (stored && stored.phases.length > 0) {
-      setPhases(stored.phases);
-      setProjectTitle(stored.title);
+    const loaded = loadProjectsFromLocalStorage();
+    if (loaded.projects.length > 0) {
+      setProjects(loaded.projects);
+      setActiveProjectId(loaded.activeProjectId ?? loaded.projects[0].id);
     }
   }, []);
 
   const handleGenerate = useCallback((text: string, title: string) => {
     const parsed = parsePlan(text);
     if (parsed.length > 0) {
-      setPhases(parsed);
-      setProjectTitle(title);
+      const newProject = createProject(title, parsed);
+      setProjects((prev) => {
+        const next = [newProject, ...prev];
+        saveProjectsToLocalStorage(next, newProject.id);
+        return next;
+      });
+      setActiveProjectId(newProject.id);
       setScreen("dashboard");
-      // Save initial JSON to localStorage
-      saveToLocalStorage(title, parsed);
     }
   }, []);
 
   const handleToggleTask = useCallback(
     (taskId: string) => {
-      setPhases((prev) => {
-        const updated = prev.map((phase) => ({
-          ...phase,
-          tasks: phase.tasks.map((task) =>
-            task.id === taskId ? { ...task, done: !task.done } : task
-          ),
-        }));
-        // Save changes to localStorage
-        saveToLocalStorage(projectTitle, updated);
-        return updated;
+      if (!activeProjectId) return;
+      setProjects((prev) => {
+        const next = prev.map((project) => {
+          if (project.id !== activeProjectId) return project;
+          const updatedPhases = project.phases.map((phase) => ({
+            ...phase,
+            tasks: phase.tasks.map((task) =>
+              task.id === taskId ? { ...task, done: !task.done } : task
+            ),
+          }));
+          return {
+            ...project,
+            phases: updatedPhases,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        saveProjectsToLocalStorage(next, activeProjectId);
+        return next;
       });
     },
-    [projectTitle]
+    [activeProjectId]
   );
 
   const handleAddTask = useCallback(
     (phaseId: string, text: string) => {
-      setPhases((prev) => {
-        const updated = prev.map((phase) =>
-          phase.id === phaseId
-            ? {
-                ...phase,
-                tasks: [
-                  ...phase.tasks,
-                  {
-                    id: `task-${Date.now()}`,
-                    text,
-                    done: false,
-                  },
-                ],
-              }
-            : phase
-        );
-        // Save changes to localStorage
-        saveToLocalStorage(projectTitle, updated);
-        return updated;
+      if (!activeProjectId) return;
+      setProjects((prev) => {
+        const next = prev.map((project) => {
+          if (project.id !== activeProjectId) return project;
+          const updatedPhases = project.phases.map((phase) =>
+            phase.id === phaseId
+              ? {
+                  ...phase,
+                  tasks: [
+                    ...phase.tasks,
+                    {
+                      id: `task-${Date.now()}`,
+                      text,
+                      done: false,
+                    },
+                  ],
+                }
+              : phase
+          );
+          return {
+            ...project,
+            phases: updatedPhases,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        saveProjectsToLocalStorage(next, activeProjectId);
+        return next;
       });
     },
-    [projectTitle]
+    [activeProjectId]
   );
 
-  const handleReset = useCallback(() => {
-    setPhases([]);
-    setProjectTitle("");
+  const handleNewProject = useCallback(() => {
     setScreen("input");
-    // Clear localStorage
-    clearLocalStorage();
   }, []);
 
   const handleHome = useCallback(() => {
     setScreen("welcome");
   }, []);
 
-  const handleImport = useCallback((data: { title: string; phases: Phase[] }) => {
-    setPhases(data.phases);
-    setProjectTitle(data.title);
+  const handleProjects = useCallback(() => {
+    setScreen("projects");
+  }, []);
+
+  const handleSelectProject = useCallback((projectId: string) => {
+    setActiveProjectId(projectId);
     setScreen("dashboard");
-    // Save imported data to localStorage
-    saveToLocalStorage(data.title, data.phases);
+    saveProjectsToLocalStorage(projects, projectId);
+  }, [projects]);
+
+  const handleDeleteProject = useCallback(
+    (projectId: string) => {
+      const next = projects.filter((project) => project.id !== projectId);
+      const nextActiveId =
+        projectId === activeProjectId ? next[0]?.id ?? null : activeProjectId;
+      setProjects(next);
+      setActiveProjectId(nextActiveId);
+      if (next.length === 0) {
+        setScreen("welcome");
+      }
+      saveProjectsToLocalStorage(next, nextActiveId);
+    },
+    [activeProjectId, projects]
+  );
+
+  const handleImport = useCallback((data: { title: string; phases: Phase[] }) => {
+    if (!data.phases?.length) return;
+    const importedProject = createProject(
+      data.title?.trim() || "Imported Project",
+      data.phases
+    );
+    setProjects((prev) => {
+      const next = [importedProject, ...prev];
+      saveProjectsToLocalStorage(next, importedProject.id);
+      return next;
+    });
+    setActiveProjectId(importedProject.id);
+    setScreen("dashboard");
   }, []);
 
   switch (screen) {
@@ -147,13 +266,19 @@ export default function Home() {
       return (
         <WelcomeScreen
           onStart={() => {
-            setPhases([]);
-            setProjectTitle("");
             setScreen("input");
           }}
-          onContinue={() => setScreen("dashboard")}
-          hasProject={hasProject}
-          projectTitle={projectTitle}
+          onContinue={
+            activeProject
+              ? () => {
+                  setScreen("dashboard");
+                }
+              : undefined
+          }
+          onProjects={hasProjects ? () => setScreen("projects") : undefined}
+          hasProject={hasProjects}
+          projectTitle={activeProject?.title}
+          projectCount={projects.length}
         />
       );
     case "input":
@@ -163,17 +288,29 @@ export default function Home() {
           onBack={() => setScreen("welcome")}
         />
       );
-      case "dashboard":
-        return (
-          <ProjectDashboard
-            title={projectTitle}
-            phases={phases}
-            onToggleTask={handleToggleTask}
-            onAddTask={handleAddTask}
-            onReset={handleReset}
-            onHome={handleHome}
-            onImport={handleImport}
-          />
-        );
+    case "projects":
+      return (
+        <ProjectsDashboard
+          projects={projects}
+          activeProjectId={activeProjectId}
+          onSelectProject={handleSelectProject}
+          onCreateProject={handleNewProject}
+          onDeleteProject={handleDeleteProject}
+          onBack={handleHome}
+        />
+      );
+    case "dashboard":
+      return (
+        <ProjectDashboard
+          title={activeProject?.title ?? "Untitled Project"}
+          phases={activeProject?.phases ?? []}
+          onToggleTask={handleToggleTask}
+          onAddTask={handleAddTask}
+          onNewProject={handleNewProject}
+          onHome={handleHome}
+          onProjects={hasProjects ? handleProjects : undefined}
+          onImport={handleImport}
+        />
+      );
   }
 }

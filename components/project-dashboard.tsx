@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { ArrowLeft, Home, CheckCircle2, Download, Upload } from "lucide-react";
+import { ArrowLeft, Home, CheckCircle2, Download, Upload, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PhaseSection } from "@/components/phase-section";
@@ -12,8 +12,9 @@ interface ProjectDashboardProps {
   phases: Phase[];
   onToggleTask: (taskId: string) => void;
   onAddTask: (phaseId: string, text: string) => void;
-  onReset: () => void;
+  onNewProject: () => void;
   onHome: () => void;
+  onProjects?: () => void;
   onImport?: (jsonData: { title: string; phases: Phase[] }) => void;
 }
 
@@ -22,8 +23,9 @@ export function ProjectDashboard({
   phases,
   onToggleTask,
   onAddTask,
-  onReset,
+  onNewProject,
   onHome,
+  onProjects,
   onImport,
 }: ProjectDashboardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,11 +114,25 @@ export function ProjectDashboard({
             <Home className="h-4 w-4" />
             Home
           </Button>
+          {onProjects ? (
+            <>
+              <span className="text-muted-foreground/40">|</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onProjects}
+                className="gap-2 text-muted-foreground"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Projects
+              </Button>
+            </>
+          ) : null}
           <span className="text-muted-foreground/40">|</span>
           <Button
             variant="ghost"
             size="sm"
-            onClick={onReset}
+            onClick={onNewProject}
             className="gap-2 text-muted-foreground"
           >
             <ArrowLeft className="h-4 w-4" />

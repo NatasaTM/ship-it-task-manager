@@ -1,20 +1,24 @@
 "use client";
 
-import { Rocket, FolderOpen } from "lucide-react";
+import { Rocket, FolderOpen, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface WelcomeScreenProps {
   onStart: () => void;
+  onProjects?: () => void;
   onContinue?: () => void;
   hasProject: boolean;
   projectTitle?: string;
+  projectCount?: number;
 }
 
 export function WelcomeScreen({
   onStart,
+  onProjects,
   onContinue,
   hasProject,
   projectTitle,
+  projectCount,
 }: WelcomeScreenProps) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -34,12 +38,18 @@ export function WelcomeScreen({
           Paste your AI-generated development plan and instantly get an
           interactive task board with progress tracking.
         </p>
+        {hasProject && projectCount ? (
+          <p className="text-xs text-muted-foreground">
+            You have {projectCount} saved project
+            {projectCount === 1 ? "" : "s"} ready to open.
+          </p>
+        ) : null}
         <div className="mt-4 flex flex-col items-center gap-3">
           <Button size="lg" onClick={onStart} className="gap-2 px-8">
             <Rocket className="h-4 w-4" />
             Start New Project
           </Button>
-          {hasProject && onContinue && (
+          {hasProject && onContinue ? (
             <Button
               size="lg"
               variant="outline"
@@ -47,9 +57,20 @@ export function WelcomeScreen({
               className="gap-2 px-8 bg-transparent"
             >
               <FolderOpen className="h-4 w-4" />
-              Continue{projectTitle ? `: ${projectTitle}` : " Project"}
+              Open Last{projectTitle ? `: ${projectTitle}` : " Project"}
             </Button>
-          )}
+          ) : null}
+          {hasProject && onProjects ? (
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={onProjects}
+              className="gap-2 px-8"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              View All Projects
+            </Button>
+          ) : null}
         </div>
       </div>
     </main>
