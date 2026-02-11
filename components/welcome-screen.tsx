@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Rocket, FolderOpen, LayoutGrid } from "lucide-react";
+import { Rocket, FolderOpen, LayoutGrid, MessageSquare, ClipboardCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "motion/react"; // Smooth, easy animations
+import { motion } from "motion/react";
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -132,15 +132,12 @@ export function WelcomeScreen({
   projectCount,
 }: WelcomeScreenProps) {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 bg-background">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 bg-background py-20">
       <CursorTrail />
 
       {/* Background Decor */}
       <div className="absolute inset-0 z-0">
-        {/* The Grid Pattern - Fills the 'emptiness' */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
-        
-        {/* Floating Blobs */}
         <div className="absolute -left-24 top-10 h-96 w-96 rounded-full bg-primary/20 blur-[120px] animate-pulse" />
         <div className="absolute -right-16 bottom-8 h-96 w-96 rounded-full bg-primary/10 blur-[120px] animate-pulse" />
       </div>
@@ -149,22 +146,20 @@ export function WelcomeScreen({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 flex max-w-2xl flex-col items-center gap-8 text-center"
+        className="relative z-10 flex max-w-4xl flex-col items-center gap-8 text-center"
       >
         {/* Interactive Rocket Icon */}
         <motion.div 
           whileHover={{ scale: 1.05, rotate: 5 }}
           whileTap={{ scale: 0.95 }}
-          className="group relative flex h-28 w-28 items-center justify-center rounded-3xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-2xl transition-colors hover:bg-primary/10"
+          className="group relative flex h-24 w-24 items-center justify-center rounded-3xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-2xl transition-colors hover:bg-primary/10"
         >
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           >
-            <Rocket className="h-14 w-14 text-primary transition-transform group-hover:-translate-y-2 group-hover:translate-x-1" />
+            <Rocket className="h-12 w-12 text-primary transition-transform group-hover:-translate-y-2 group-hover:translate-x-1" />
           </motion.div>
-          
-          {/* Subtle "Glow" behind rocket on hover */}
           <div className="absolute inset-0 rounded-3xl bg-primary/20 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
         </motion.div>
 
@@ -177,13 +172,48 @@ export function WelcomeScreen({
           </p>
         </div>
 
-        <p className="max-w-lg text-pretty text-lg text-muted-foreground/80 leading-relaxed">
+         <p className="max-w-lg text-pretty text-lg text-muted-foreground/80 leading-relaxed">
           The bridge between a LLM prompt and a finished product. 
           Paste your plan and watch it become a task board in seconds.
         </p>
 
+        {/* --- HOW IT WORKS SECTION --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-4">
+          {[
+            {
+              icon: <MessageSquare className="h-5 w-5 text-blue-500" />,
+              title: "1. Prompt AI",
+              desc: "Ask your favorite LLM to build a development plan."
+            },
+            {
+              icon: <Zap className="h-5 w-5 text-amber-500" />,
+              title: "2. Paste Prompt",
+              desc: "Copy the output and paste it into ShipIt."
+            },
+            {
+              icon: <ClipboardCheck className="h-5 w-5 text-emerald-500" />,
+              title: "3. Execute",
+              desc: "Track tasks and finish your project faster."
+            }
+          ].map((step, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.1 }}
+              className="flex flex-col items-start p-5 rounded-2xl border border-border bg-card/50 backdrop-blur-md text-left transition-colors hover:border-primary/30"
+            >
+              <div className="mb-3 p-2 rounded-lg bg-background border border-border">
+                {step.icon}
+              </div>
+              <h3 className="font-bold text-foreground mb-1">{step.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+        {/* --- END HOW IT WORKS --- */}
+
         <div className="mt-4 flex flex-col items-center gap-4 w-full sm:w-auto">
-          {/* Main Action - Primary focus */}
           <Button 
             size="lg" 
             onClick={onStart} 
@@ -193,7 +223,6 @@ export function WelcomeScreen({
             Start New Project
           </Button>
 
-          {/* Secondary Actions in a row to save vertical space */}
           <div className="flex flex-wrap justify-center gap-3">
             {hasProject && onContinue && (
               <Button
