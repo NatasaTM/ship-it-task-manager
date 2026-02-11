@@ -1,10 +1,13 @@
 # Ship It — From AI Plans to Executable Tasks
 
+🔗 **Live Demo:** https://ship-it-task-manager.vercel.app/
+
 **Ship It** is a lightweight prototype that turns AI-generated development plans into structured, trackable tasks — without forcing you to manually recreate everything in a todo app.
 
 It focuses on the **last mile problem**: plans exist, but execution never starts.
 
 This project is intentionally built as a **vibe-coding / prototyping demo**, optimized for speed, clarity, and UX experimentation rather than completeness.
+
 
 ---
 
