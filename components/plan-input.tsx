@@ -1,8 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, ClipboardCopy, Check, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ClipboardCopy,
+  Check,
+  Sparkles,
+  Terminal,
+  Code2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "motion/react";
 
 const JSON_PROMPT_TEMPLATE = `You are generating a DEVELOPMENT BUILD PLAN that will be parsed by software.
 
@@ -20,8 +28,8 @@ Schema:
 }
 
 Rules:
-- 3–5 phases
-- 3–6 tasks per phase
+- 3-5 phases
+- 3-6 tasks per phase
 - Tasks must be short, concrete, and implementation-focused
 - Keep tasks ordered (they will be executed top-to-bottom)
 - Do NOT include any fields other than: phases[].name, phases[].hours, phases[].tasks
@@ -62,7 +70,7 @@ function parsePossiblyWrappedJson(input: string): PlanJson {
   // Try direct parse first
   try {
     return JSON.parse(trimmed) as PlanJson;
-  } catch { }
+  } catch {}
 
   // Remove ```json fences if present
   const fenceStripped = trimmed
@@ -73,7 +81,7 @@ function parsePossiblyWrappedJson(input: string): PlanJson {
 
   try {
     return JSON.parse(fenceStripped) as PlanJson;
-  } catch { }
+  } catch {}
 
   // Last attempt: extract first top-level {...} block (best-effort)
   const firstBrace = trimmed.indexOf("{");
@@ -87,7 +95,7 @@ function parsePossiblyWrappedJson(input: string): PlanJson {
 }
 
 interface PlanInputProps {
-  // Keep your existing signature; we’ll pass JSON string instead of Markdown
+  // Keep your existing signature; we'll pass JSON string instead of Markdown
   onGenerate: (text: string, title: string) => void;
   onBack: () => void;
 }
@@ -168,63 +176,80 @@ export function PlanInput({ onGenerate, onBack }: PlanInputProps) {
   };
 
   return (
-    <main className="flex min-h-screen flex-col px-4 py-8">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background px-4 py-8">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto flex w-full max-w-2xl flex-col gap-10"
+      >
         <Button
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="w-fit gap-2 text-muted-foreground"
+          className="w-fit gap-2 rounded-xl text-muted-foreground hover:bg-primary/10"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
 
         {/* Section 1: Get Your Build Plan */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
+        <section className="space-y-6">
+          <div className="flex items-end justify-between px-2">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Terminal className="h-4 w-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">
+                  Step_01
+                </span>
+              </div>
+              <h2 className="text-2xl font-black tracking-tighter">
+                Get Your Build Plan (JSON)
+              </h2>
             </div>
-            <h2 className="text-lg font-semibold">Get Your Build Plan (JSON)</h2>
+            <Button
+              variant={copied ? "default" : "outline"}
+              size="sm"
+              onClick={handleCopy}
+              className="h-9 gap-2 rounded-xl border-primary/20 bg-background/50 text-[10px] font-bold uppercase transition-all hover:bg-primary/10"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <ClipboardCopy className="h-3.5 w-3.5" />
+                  Copy Prompt
+                </>
+              )}
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Copy the JSON-only prompt below and paste it into your favorite AI assistant.
-            Then paste the JSON response into the box.
+
+          <p className="px-2 text-sm text-muted-foreground">
+            Copy the JSON-only prompt below and paste it into your favorite AI
+            assistant. Then paste the JSON response into the box.
           </p>
 
-          <div className="relative rounded-lg border bg-card">
-            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-card-foreground/80">
+          <div className="relative rounded-[2rem] border border-primary/10 bg-card/30 p-8 shadow-inner backdrop-blur-sm">
+            <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/80">
               {JSON_PROMPT_TEMPLATE}
             </pre>
-            <div className="absolute right-2 top-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                className="gap-1.5 text-xs"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <ClipboardCopy className="h-3 w-3" />
-                    Copy Prompt
-                  </>
-                )}
-              </Button>
-            </div>
+            <div className="absolute left-8 top-0 h-[1px] w-12 bg-primary/40" />
+            <div className="absolute left-0 top-8 h-12 w-[1px] bg-primary/40" />
           </div>
         </section>
 
         {/* Project Title */}
-        <section className="flex flex-col gap-3">
+        <section className="space-y-3 px-2">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">
+              Step_02
+            </span>
+          </div>
           <label
             htmlFor="project-title"
-            className="text-sm font-medium text-card-foreground"
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground"
           >
             Project Title
           </label>
@@ -234,52 +259,72 @@ export function PlanInput({ onGenerate, onBack }: PlanInputProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Spec2Steps Prototype"
-            className="w-full rounded-lg border bg-card px-4 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-2xl border border-primary/10 bg-card px-6 py-4 text-lg font-bold tracking-tight transition-all focus:border-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/5"
           />
         </section>
 
         {/* Section 2: Paste Your Plan */}
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <span className="text-sm font-bold text-primary">2</span>
+        <section className="space-y-6 pb-20">
+          <div className="space-y-1 px-2">
+            <div className="flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">
+                Step_03
+              </span>
             </div>
-            <h2 className="text-lg font-semibold">Paste Your JSON Plan</h2>
+            <h2 className="text-2xl font-black tracking-tighter">
+              Paste Your JSON Plan
+            </h2>
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            Paste the AI JSON response below and we’ll parse it into trackable tasks.
+          <p className="px-2 text-sm text-muted-foreground">
+            Paste the AI JSON response below and we'll parse it into trackable
+            tasks.
           </p>
 
-          <textarea
-            value={planText}
-            onChange={(e) => setPlanText(e.target.value)}
-            placeholder={placeholderJson}
-            className="min-h-[240px] w-full resize-y rounded-lg border bg-card p-4 font-mono text-sm text-card-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="relative">
+            <textarea
+              value={planText}
+              onChange={(e) => setPlanText(e.target.value)}
+              placeholder={placeholderJson}
+              className="min-h-[350px] w-full resize-none rounded-[2rem] border border-primary/10 bg-card/50 p-8 font-mono text-sm leading-relaxed shadow-2xl transition-all focus:border-primary/40 focus:outline-none"
+            />
 
-          {parseError ? (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-              <div className="font-medium">Couldn’t parse JSON</div>
-              <div className="mt-1 opacity-90">{parseError}</div>
-              <div className="mt-2 text-xs text-destructive/80">
-                Tip: ensure the response is a single JSON object with{" "}
-                <span className="font-mono">{"{ phases: [...] }"}</span> and no extra text.
-              </div>
-            </div>
-          ) : null}
+            <AnimatePresence>
+              {parseError ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-x-6 bottom-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 backdrop-blur-md"
+                >
+                  <div className="text-sm font-medium text-destructive">
+                    Couldn't parse JSON
+                  </div>
+                  <div className="mt-1 text-sm text-destructive/90">
+                    {parseError}
+                  </div>
+                  <div className="mt-2 text-xs text-destructive/80">
+                    Tip: ensure the response is a single JSON object with{" "}
+                    <span className="font-mono">{"{ phases: [...] }"}</span> and
+                    no extra text.
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
 
           <Button
             size="lg"
             onClick={handleGenerate}
             disabled={!planText.trim()}
-            className="gap-2"
+            className="group h-16 w-full gap-3 rounded-[1.4rem] text-base font-bold uppercase tracking-wide shadow-[0_20px_40px_-15px_rgba(var(--primary),0.5)] transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-5 w-5 transition-transform group-hover:rotate-12" />
             Generate Tasks
           </Button>
         </section>
-      </div>
+      </motion.div>
     </main>
   );
 }
