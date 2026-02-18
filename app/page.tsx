@@ -6,6 +6,9 @@ import { PlanInput } from "@/components/plan-input";
 import { ProjectDashboard } from "@/components/project-dashboard";
 import { ProjectsDashboard } from "@/components/projects-dashboard";
 import { parsePlan, type Phase } from "@/lib/parse-plan";
+import { APISettings } from '@/components/api-settings';
+import { AIGenerator } from '@/components/ai-generator';
+import { PromptLibrary } from '@/components/prompt-library';
 
 type Screen = "welcome" | "input" | "projects" | "dashboard";
 
@@ -124,6 +127,11 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [projects, setProjects] = useState<StoredProject[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  
+  // ✨ NEW: AI Features state
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showPromptLibrary, setShowPromptLibrary] = useState(false);
 
   const activeProject = useMemo(
     () => projects.find((project) => project.id === activeProjectId) ?? null,
@@ -152,6 +160,25 @@ export default function Home() {
       setActiveProjectId(newProject.id);
       setScreen("dashboard");
     }
+  }, []);
+
+  // ✨ NEW: Handle AI-generated plans
+  const handleAIGenerated = useCallback((planData: any) => {
+    if (!planData.phases?.length) return;
+    
+    const newProject = createProject(
+      planData.name || planData.title || "AI Generated Project",
+      planData.phases
+    );
+    
+    setProjects((prev) => {
+      const next = [newProject, ...prev];
+      saveProjectsToLocalStorage(next, newProject.id);
+      return next;
+    });
+    setActiveProjectId(newProject.id);
+    setShowAIGenerator(false);
+    setScreen("dashboard");
   }, []);
 
   const handleToggleTask = useCallback(
@@ -261,9 +288,76 @@ export default function Home() {
     setScreen("dashboard");
   }, []);
 
-  switch (screen) {
-    case "welcome":
-      return (
+  return (
+    <>
+      {/* ✨ NEW: Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-muted-foreground hover:text-foreground text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <APISettings />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: AI Generator Modal */}
+      {showAIGenerator && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">Generate Plan with AI</h2>
+              <button
+                onClick={() => setShowAIGenerator(false)}
+                className="text-muted-foreground hover:text-foreground text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <AIGenerator
+                onPlanGenerated={handleAIGenerated}
+                onOpenSettings={() => {
+                  setShowAIGenerator(false);
+                  setShowSettings(true);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✨ NEW: Prompt Library Modal */}
+      {showPromptLibrary && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-border">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">Prompt Templates</h2>
+              <button
+                onClick={() => setShowPromptLibrary(false)}
+                className="text-muted-foreground hover:text-foreground text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <PromptLibrary />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {screen === "welcome" && (
         <WelcomeScreen
           onStart={() => {
             setScreen("input");
@@ -279,17 +373,21 @@ export default function Home() {
           hasProject={hasProjects}
           projectTitle={activeProject?.title}
           projectCount={projects.length}
+          // ✨ NEW: Pass AI feature handlers
+          onShowAIGenerator={() => setShowAIGenerator(true)}
+          onShowPromptLibrary={() => setShowPromptLibrary(true)}
+          onShowSettings={() => setShowSettings(true)}
         />
-      );
-    case "input":
-      return (
+      )}
+
+      {screen === "input" && (
         <PlanInput
           onGenerate={handleGenerate}
           onBack={() => setScreen("welcome")}
         />
-      );
-    case "projects":
-      return (
+      )}
+
+      {screen === "projects" && (
         <ProjectsDashboard
           projects={projects}
           activeProjectId={activeProjectId}
@@ -298,9 +396,9 @@ export default function Home() {
           onDeleteProject={handleDeleteProject}
           onBack={handleHome}
         />
-      );
-    case "dashboard":
-      return (
+      )}
+
+      {screen === "dashboard" && (
         <ProjectDashboard
           title={activeProject?.title ?? "Untitled Project"}
           phases={activeProject?.phases ?? []}
@@ -311,6 +409,7 @@ export default function Home() {
           onProjects={hasProjects ? handleProjects : undefined}
           onImport={handleImport}
         />
-      );
-  }
+      )}
+    </>
+  );
 }

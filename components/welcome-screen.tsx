@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Rocket, FolderOpen, LayoutGrid, MessageSquare, ClipboardCheck, Zap } from "lucide-react";
+import { Rocket, FolderOpen, LayoutGrid, MessageSquare, ClipboardCheck, Zap, Sparkles, BookOpen, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 
@@ -12,6 +12,10 @@ interface WelcomeScreenProps {
   hasProject: boolean;
   projectTitle?: string;
   projectCount?: number;
+  // ✨ NEW: AI feature handlers
+  onShowAIGenerator?: () => void;
+  onShowPromptLibrary?: () => void;
+  onShowSettings?: () => void;
 }
 
 const TRAIL_SIZES = [26, 20, 15, 11, 8];
@@ -130,10 +134,23 @@ export function WelcomeScreen({
   hasProject,
   projectTitle,
   projectCount,
+  onShowAIGenerator,
+  onShowPromptLibrary,
+  onShowSettings,
 }: WelcomeScreenProps) {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 bg-background py-20">
       <CursorTrail />
+
+      {/* ✨ Settings Button - No animation to avoid conflicts */}
+      {onShowSettings && (
+        <button
+          onClick={onShowSettings}
+          className="fixed top-6 right-6 z-20 p-3 rounded-xl border border-border bg-card/80 backdrop-blur-md hover:bg-card transition-all hover:scale-105 shadow-lg"
+        >
+          <Settings className="h-5 w-5 text-muted-foreground" />
+        </button>
+      )}
 
       {/* Background Decor */}
       <div className="absolute inset-0 z-0">
@@ -142,11 +159,12 @@ export function WelcomeScreen({
         <div className="absolute -right-16 bottom-8 h-96 w-96 rounded-full bg-primary/10 blur-[120px] animate-pulse" />
       </div>
 
+      {/* Main Content - Single consistent animation */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 flex max-w-4xl flex-col items-center gap-8 text-center"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative z-10 flex max-w-5xl flex-col items-center gap-8 text-center"
       >
         {/* Interactive Rocket Icon */}
         <motion.div 
@@ -177,8 +195,69 @@ export function WelcomeScreen({
           Paste your plan and watch it become a task board in seconds.
         </p>
 
-        {/* --- HOW IT WORKS SECTION --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-4">
+        {/* Three Ways to Create Projects - No individual animations */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-6">
+          {/* AI Generator Option */}
+          {onShowAIGenerator && (
+            <button
+              onClick={onShowAIGenerator}
+              className="group relative flex flex-col items-start p-6 rounded-2xl border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-blue-500/10 backdrop-blur-md text-left transition-all hover:scale-[1.02] hover:border-purple-500/50 hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.4)]"
+            >
+              <div className="mb-3 p-2.5 rounded-xl bg-purple-500/20 border border-purple-500/30">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+              </div>
+              <h3 className="font-bold text-foreground mb-2 text-lg">Generate with AI</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                Use your Anthropic API key to generate plans instantly
+              </p>
+              <div className="mt-auto text-xs font-medium text-purple-500">
+                ~$0.01-0.05 per plan
+              </div>
+              <div className="absolute inset-0 rounded-2xl bg-purple-500/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+            </button>
+          )}
+
+          {/* Prompt Templates Option */}
+          {onShowPromptLibrary && (
+            <button
+              onClick={onShowPromptLibrary}
+              className="group relative flex flex-col items-start p-6 rounded-2xl border-2 border-blue-500/30 bg-card/50 backdrop-blur-md text-left transition-all hover:scale-[1.02] hover:border-blue-500/50 hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.4)]"
+            >
+              <div className="mb-3 p-2.5 rounded-xl bg-blue-500/20 border border-blue-500/30">
+                <BookOpen className="h-5 w-5 text-blue-500" />
+              </div>
+              <h3 className="font-bold text-foreground mb-2 text-lg">Prompt Templates</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                Copy prompts for Claude, ChatGPT, or any AI
+              </p>
+              <div className="mt-auto text-xs font-medium text-green-500">
+                100% Free • No API key needed
+              </div>
+              <div className="absolute inset-0 rounded-2xl bg-blue-500/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+            </button>
+          )}
+
+          {/* Manual Create Option */}
+          <button
+            onClick={onStart}
+            className="group relative flex flex-col items-start p-6 rounded-2xl border-2 border-border bg-card/50 backdrop-blur-md text-left transition-all hover:scale-[1.02] hover:border-primary/50 hover:shadow-[0_0_30px_-5px_rgba(var(--primary),0.3)]"
+          >
+            <div className="mb-3 p-2.5 rounded-xl bg-primary/20 border border-primary/30">
+              <MessageSquare className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-bold text-foreground mb-2 text-lg">Paste & Create</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Paste JSON or build your plan from scratch
+            </p>
+            <div className="mt-auto text-xs font-medium text-muted-foreground">
+              Classic mode
+            </div>
+            <div className="absolute inset-0 rounded-2xl bg-primary/10 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+          </button>
+        </div>
+
+        {/* How It Works - Also no individual animations */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mt-8">
           {[
             {
               icon: <MessageSquare className="h-5 w-5 text-blue-500" />,
@@ -187,8 +266,8 @@ export function WelcomeScreen({
             },
             {
               icon: <Zap className="h-5 w-5 text-amber-500" />,
-              title: "2. Paste Prompt",
-              desc: "Copy the output and paste it into ShipIt."
+              title: "2. Paste or Generate",
+              desc: "Copy the output or generate directly with your API key."
             },
             {
               icon: <ClipboardCheck className="h-5 w-5 text-emerald-500" />,
@@ -196,33 +275,21 @@ export function WelcomeScreen({
               desc: "Track tasks and finish your project faster."
             }
           ].map((step, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + i * 0.1 }}
-              className="flex flex-col items-start p-5 rounded-2xl border border-border bg-card/50 backdrop-blur-md text-left transition-colors hover:border-primary/30"
+              className="flex flex-col items-start p-5 rounded-2xl border border-border bg-card/30 backdrop-blur-md text-left transition-colors hover:border-primary/30"
             >
               <div className="mb-3 p-2 rounded-lg bg-background border border-border">
                 {step.icon}
               </div>
               <h3 className="font-bold text-foreground mb-1">{step.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
-        {/* --- END HOW IT WORKS --- */}
 
-        <div className="mt-4 flex flex-col items-center gap-4 w-full sm:w-auto">
-          <Button 
-            size="lg" 
-            onClick={onStart} 
-            className="group relative h-14 gap-3 px-12 text-lg font-semibold shadow-[0_0_20px_-5px_rgba(var(--primary),0.5)] transition-all hover:scale-105"
-          >
-            <Rocket className="h-5 w-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
-            Start New Project
-          </Button>
-
+        {/* Action Buttons */}
+        <div className="mt-6 flex flex-col items-center gap-4 w-full sm:w-auto">
           <div className="flex flex-wrap justify-center gap-3">
             {hasProject && onContinue && (
               <Button
